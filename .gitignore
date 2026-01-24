@@ -1,0 +1,6 @@
+﻿.env
+found_wallets.json
+address_alpha_ranked.csv
+*.json
+__pycache__
+.venv
