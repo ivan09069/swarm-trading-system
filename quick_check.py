@@ -2,6 +2,8 @@
 """Quick balance check for specific addresses"""
 import asyncio
 import aiohttp
+import json
+import os
 
 CHAINS = {
     "ETH": "https://eth.llamarpc.com",
@@ -12,12 +14,28 @@ CHAINS = {
     "Optimism": "https://mainnet.optimism.io",
 }
 
-ADDRESSES = [
-    ("0x7adBdd339eC411A5B3364BFD6563548d57721fD9", "Seed2_Napkin", "fbdef321518cf5d3eb5736831b2ba591ec9d41be8adc01d2e5569202d7e3b975"),
-    ("0x90A66EEA7c4e6918678E1c6c5D193746468217a2", "Seed10_Sponsor", "8db29399650a9bae618e0b44ce720e1b8967c068b976d0a427b7a38c60f9997b"),
-    ("0x3685a08e2e4855cfcf126b2c791a5c32a1f8e0e3", "HighValue_Target1", "UNKNOWN"),
-    ("0x58BBfee7D62674856851A553AA75A1eE5d86Bec6", "HighValue_Target2", "UNKNOWN"),
-]
+def load_addresses():
+    # Try env var first
+    raw = os.environ.get("QUICK_CHECK_ADDRESSES", "")
+    if raw:
+        try:
+            return json.loads(raw)
+        except Exception as e:
+            print(f"Warning: QUICK_CHECK_ADDRESSES parse error: {e}")
+
+    # Try JSON file
+    path = os.environ.get("ADDRESSES_FILE", "addresses.json")
+    if os.path.exists(path):
+        try:
+            with open(path, encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Warning: addresses file parse error: {e}")
+
+    print("Warning: No addresses configured. Set QUICK_CHECK_ADDRESSES or ADDRESSES_FILE.")
+    return []
+
+ADDRESSES = [(a["address"], a["label"], a.get("key", "UNKNOWN")) for a in load_addresses()]
 
 async def check_balance(session, chain, rpc, address):
     try:
@@ -36,7 +54,7 @@ async def main():
     async with aiohttp.ClientSession() as session:
         for addr, label, key in ADDRESSES:
             print(f"\n{label}: {addr}")
-            print(f"  Key: {key[:20]}..." if key != "UNKNOWN" else "  Key: UNKNOWN")
+            print(f"  Key: {'available' if key != 'UNKNOWN' else 'UNKNOWN'}")
             total = 0
             for chain, rpc in CHAINS.items():
                 bal = await check_balance(session, chain, rpc, addr)

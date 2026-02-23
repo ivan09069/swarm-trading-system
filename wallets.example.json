@@ -1,0 +1,7 @@
+[
+  {
+    "address": "0xYourWalletAddressHere",
+    "privkey": "your_private_key_hex_here",
+    "name": "MyWallet"
+  }
+]
