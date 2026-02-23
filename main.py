@@ -38,7 +38,7 @@ async def main():
     print("=" * 60)
     print("🐝 SWARM SYSTEM v1.1")
     print("=" * 60)
-    print(f"Groq API: {'✅ ' + GROQ_KEY[:20] + '...' if GROQ_KEY else '❌ Missing'}")
+    print(f"Groq API: {'✅ configured' if GROQ_KEY else '❌ Missing'}")
     print(f"Base RPC: {BASE_RPC}")
     print("=" * 60)
     

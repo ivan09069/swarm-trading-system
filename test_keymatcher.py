@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 """Quick test of keymatcher derivation"""
 
+import os
+import sys
+
 print("Testing hdwallet derivation...")
+
+seed = os.environ.get("TEST_SEED_PHRASE", "")
+if not seed:
+    print("Error: TEST_SEED_PHRASE environment variable is not set.")
+    print("Usage: TEST_SEED_PHRASE='word1 word2 ...' python test_keymatcher.py")
+    sys.exit(1)
 
 try:
     from hdwallet import HDWallet
     from hdwallet.symbols import ETH
-    
-    seed = "army van defense carry jealous true garbage claim echo media make crunch"
     
     hdw = HDWallet(symbol=ETH)
     hdw.from_mnemonic(seed)

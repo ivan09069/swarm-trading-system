@@ -1,6 +1,33 @@
-﻿.env
+# Environment files — keep template tracked, ignore everything else
+.env
+.env.*
+!.env.template
+
+# Keys and certificates
+*.pem
+*.key
+
+# Secret data files (gitignored, never commit)
+wallets.json
+seeds.json
+targets.json
+addresses.json
 found_wallets.json
-address_alpha_ranked.csv
+wallet_data/
+
+# Generated output — ignore all JSON/CSV except package.json
+*.csv
 *.json
-__pycache__
-.venv
+!package.json
+!*.example.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/

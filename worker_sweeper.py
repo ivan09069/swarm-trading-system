@@ -5,6 +5,8 @@ Multi-chain balance checker and sweeper
 """
 
 import asyncio
+import json
+import os
 from typing import Dict, List
 from datetime import datetime
 
@@ -17,19 +19,45 @@ CHAIN_RPCS = {
     "bsc": "https://bsc-dataseed.binance.org",
 }
 
+def load_controlled_wallets():
+    # Try JSON file
+    path = os.environ.get("CONTROLLED_WALLETS_FILE", "wallets.json")
+    if os.path.exists(path):
+        try:
+            with open(path, encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Warning: wallets file parse error: {e}")
+
+    # Try env var JSON
+    raw = os.environ.get("CONTROLLED_WALLETS_JSON", "")
+    if raw:
+        try:
+            return json.loads(raw)
+        except Exception as e:
+            print(f"Warning: CONTROLLED_WALLETS_JSON parse error: {e}")
+
+    # Fallback: indexed env vars
+    wallets = []
+    i = 0
+    while True:
+        addr = os.environ.get(f"WALLET_{i}_ADDRESS")
+        if not addr:
+            break
+        wallets.append({
+            "address": addr,
+            "privkey": os.environ.get(f"WALLET_{i}_PRIVKEY", ""),
+            "name": os.environ.get(f"WALLET_{i}_NAME", f"Wallet{i}"),
+        })
+        i += 1
+    if wallets:
+        return wallets
+
+    print("Warning: No controlled wallets configured. Set CONTROLLED_WALLETS_FILE, CONTROLLED_WALLETS_JSON, or WALLET_{i}_* env vars.")
+    return []
+
 # Known controlled wallets
-CONTROLLED_WALLETS = [
-    {
-        "address": "0x7adBdd339eC411A5B3364BFD6563548d57721fD9",
-        "privkey": "fbdef321518cf5d3eb5736831b2ba591ec9d41be8adc01d2e5569202d7e3b975",
-        "name": "Seed2_Napkin"
-    },
-    {
-        "address": "0x90A66EEA7c4e6918678E1c6c5D193746468217a2",
-        "privkey": "8db29399650a9bae618e0b44ce720e1b8967c068b976d0a427b7a38c60f9997b",
-        "name": "Seed10_Sponsor"
-    },
-]
+CONTROLLED_WALLETS = load_controlled_wallets()
 
 class SweeperWorker:
     def __init__(self, results_queue, command_queue):

@@ -5,28 +5,69 @@ WORKER 1: KEY MATCHER v4 - DEEP SCAN
 """
 
 import asyncio
+import json
+import os
 from typing import List, Dict, Tuple
 
-HIGH_VALUE_TARGETS = [
-    "0x3685a08e2e4855cfcf126b2c791a5c32a1f8e0e3",
-    "0x488e3a4bbbb2386ba619eed88319e807c3ddb6c2", 
-    "0xf1da71f8b01a9b35e1a193649c5512f36f2755db",
-    "0x58bbfee7d62674856851a553aa75a1ee5d86bec6",
-    "0x9660503aaedbdb262794ec4f0a659e0e8a8a20c3",
-]
+def load_seeds():
+    # Try JSON file
+    path = os.environ.get("SEEDS_FILE", "seeds.json")
+    if os.path.exists(path):
+        try:
+            with open(path, encoding='utf-8') as f:
+                data = json.load(f)
+                return [(s["name"], s["phrase"]) for s in data]
+        except Exception as e:
+            print(f"Warning: seeds file parse error: {e}")
 
-SEEDS = [
-    ("Seed1", "cousin beach mesh utility maximum error limit pumpkin giggle craft name rookie"),
-    ("Seed2", "napkin dream juice smoke salmon talk host disease name honey tray tag"),
-    ("Seed3", "oven maze fuel select pulp ghost average tourist plunge erosion swift predict"),
-    ("Seed4", "fall enroll impose retreat whip street journey notable tray resemble come often"),
-    ("Seed5", "cover jar female achieve repair noodle lyrics shine sniff treat desk shadow because chuckle book nephew endorse napkin peasant crystal arch label chalk clever"),
-    ("Seed6", "express useful talent one smile style pretty popular century sphere error green"),
-    ("Seed7", "army van defense carry jealous true garbage claim echo media make crunch"),
-    ("Seed8", "impulse gossip matrix tuna acoustic brisk stock fish area coil stable fantasy"),
-    ("Seed10", "sponsor name tail honey split cradle laundry tiny flash two weather stone"),
-    ("Seed11", "fiscal lucky ceiling resource peasant nerve afraid around whip panic apple maximum reunion rate leaf leave genre display often fork cup brisk relief weekend"),
-]
+    # Try env var JSON
+    raw = os.environ.get("KEYMATCHER_SEEDS_JSON", "")
+    if raw:
+        try:
+            data = json.loads(raw)
+            return [(s["name"], s["phrase"]) for s in data]
+        except Exception as e:
+            print(f"Warning: KEYMATCHER_SEEDS_JSON parse error: {e}")
+
+    # Fallback: indexed env vars
+    seeds = []
+    i = 0
+    while True:
+        name = os.environ.get(f"SEED_{i}_NAME")
+        phrase = os.environ.get(f"SEED_{i}_PHRASE")
+        if not name or not phrase:
+            break
+        seeds.append((name, phrase))
+        i += 1
+    if seeds:
+        return seeds
+
+    print("Warning: No seeds configured. Set SEEDS_FILE, KEYMATCHER_SEEDS_JSON, or SEED_{i}_NAME/SEED_{i}_PHRASE env vars.")
+    return []
+
+def load_targets():
+    # Try JSON file
+    path = os.environ.get("TARGETS_FILE", "targets.json")
+    if os.path.exists(path):
+        try:
+            with open(path, encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Warning: targets file parse error: {e}")
+
+    # Try env var JSON
+    raw = os.environ.get("HIGH_VALUE_TARGETS_JSON", "")
+    if raw:
+        try:
+            return json.loads(raw)
+        except Exception as e:
+            print(f"Warning: HIGH_VALUE_TARGETS_JSON parse error: {e}")
+
+    print("Warning: No targets configured. Set TARGETS_FILE or HIGH_VALUE_TARGETS_JSON.")
+    return []
+
+HIGH_VALUE_TARGETS = load_targets()
+SEEDS = load_seeds()
 
 # All common derivation paths
 DERIVATION_PATHS = [
@@ -91,7 +132,7 @@ class KeyMatcherWorker:
                 print(f"   Address: {address}")
                 print(f"   Seed: {seed_name}")
                 print(f"   Path: {path}")
-                print(f"   Key: {privkey[:20]}...")
+                print(f"   Key: {'available' if privkey else 'UNKNOWN'}")
                 return True
         return False
 
